@@ -1,0 +1,35 @@
+用户设置:
+  user set     设置用户
+  user add     添加用户
+  user mp      输出当前用户的长期记忆
+  user mc      清除当前用户的长期记忆文件
+  user del     删除用户
+  user list    列出所有用户
+
+LLM设置:
+  model set    设置模型
+  model list   输出模型列表
+  model sr     设置运行器
+
+TTS设置:
+  tts set      切换语音合成
+
+Live2d设置:
+  l2d set      设置模型
+  l2d add      添加模型
+  l2d del      删除模型
+  l2d list     模型列表
+
+软件设置:
+  set debug    切换调试模式
+  set cc       清空缓存
+  set sc       设置缓存目录
+  set llm      更改LLM服务器
+  set tts      更改TTS服务器
+  set sd       更改Dtable Diffusion服务器
+
+help           输出此文档
+gui            使用gui界面
+exit           退出
+run            运行
+restart        重启主程序

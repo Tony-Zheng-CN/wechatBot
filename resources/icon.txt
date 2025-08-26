@@ -1,0 +1,15 @@
+##################################################################
+##                                                              ##
+##   M   M   Y    Y     SS    I    SS   TTTTT  EEEE   RRRR      ##
+##  M M M M   Y  Y     S  S       S  S    T    E      R   R     ##
+##  M M M M    YY       S     I    S      T    EEEE   RRRR      ##
+##  M  M  M    YY        S    I     S     T    E      R R       ##
+##  M  M  M    YY      S  S   I   S  S    T    E      R  R      ##
+##  M  M  M    YY       SS    I    SS     T    EEEE   R   R     ##
+##                                                              ##
+##################################################################
+##                                                              ##
+##                        Version:1.0                           ##
+##  Made With Python           Made By Bilibili@一只信息课代表  ##
+##                                                              ##
+##################################################################

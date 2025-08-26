@@ -1,0 +1,14 @@
+pillow
+pygame
+live2d-py
+ollama
+requests
+pyautogui
+opencv-python
+pynput
+pandas
+pywin32
+beautifulsoup4
+fire
+python-fire
+PyOpenGL

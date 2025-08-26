@@ -1,0 +1,14 @@
+# call sound
+       video
+#open web [web_url]
+#draw [prompt]
+#fadian
+/exit
+/help
+/tts
+/tts_status
+/debug
+/dir [path]
+/file [path]
+/model set [model_name]
+        list
