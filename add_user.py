@@ -1,25 +1,30 @@
+import json
+
 from PIL import Image
 import os
 import shutil
 
 
 class NewUser:
-    def __init__(self, user_name, user_avatar_path, image_path, set_path):
-        self.user_name = user_name
-        self.user_avatar_path = user_avatar_path
-        self.main_image_path = image_path
-        self.set_path = os.path.join(set_path, f"{self.user_name}.txt")
+    def __init__(self, user_info, exists_cover=True):
+        self.user_info = user_info
+        self.user_name = self.user_info.get("username", None)
+        if not self.user_name:
+            raise ValueError("User name is empty")
+        self.user_avatar_path = self.user_info.get("avatar_path", None)
+        self.main_image_path = self.user_info.get("image_dir", "images\\")
+        self.set_path = os.path.join(self.user_info.get("set_path", "set\\"), f"{self.user_name}.txt")
         self.output_path = str(os.path.join(self.main_image_path, self.user_name))
         self.image_path = os.path.join(self.output_path, "image.png")
         self.mark_path = os.path.join(self.output_path, "mark.png")
         self.touch_path = os.path.join(self.output_path, "touch_head.png")
         self.chosen_path = os.path.join(self.output_path, "chosen.png")
         if os.path.exists(self.output_path):
-            if input(f"{self.output_path}已存在文件夹，是否覆盖(y/n)") == "y":
+            if exists_cover:
                 shutil.rmtree(self.output_path)
                 os.mkdir(self.output_path)
             else:
-                return
+                raise FileExistsError("User already exists")
 
     def generate_image(self):
         avatar = Image.open(self.user_avatar_path)
@@ -75,35 +80,33 @@ class NewUser:
         background.save(self.touch_path)
 
     def add_set(self):
-        print("正在为您创建角色设定，请按提示填写：")
-        name = "郑若玲"
-        age = "13岁"
-        gender = "女"
-        personality = "温柔，小公举性格，偶尔毒舌但超可爱，兄控"
-        appearance = "圆脸，齐刘海，大眼睛，身高153cm，体重42kg"
-        hobbies = "追番、画画、听可爱系音乐、刷B站"
-        background_desc = "沉迷二次元番剧，宅，可爱系，绘画各种可爱的插画，有时会画一些有点黄的，B站ID:一只若玲酱"
-        watched_anime = "《别当哥哥了》，《孤独摇滚！》，《某超科学的电磁炮》"
+        ai_set = json.loads(os.path.join("resources", "ai_set.txt"), encoding="utf-8")
+        name = ai_set.get("name", "郑若玲")
+        age = ai_set.get("age", "13")
+        gender = ai_set.get("sex", "女")
+        personality = ai_set.get("personality", "温柔，小公举性格，偶尔毒舌但超可爱，兄控")
+        appearance = ai_set.get("appearance", "圆脸，齐刘海，大眼睛，身高153cm，体重42kg")
+        hobbies = ai_set.get("hobby", "追番、画画、听可爱系音乐、刷B站")
+        background = ai_set.get("background", "沉迷二次元番剧，宅，可爱系，绘画各种可爱的插画，有时会画一些有点黄的，B站ID:一只若玲酱")
 
-        user_name = input("用户的姓名（默认：XXX）：") or "XXX"
-        user_age = input("用户的年龄（默认：14岁）：") or "14岁"
-        user_gender = input("用户的性别（默认：男）：") or "男"
-        user_personality = input("用户性格（默认：萝莉控）：") or "萝莉控"
-        user_hobbies = input("用户兴趣爱好（默认：追番）：") or "追番"
-        user_background = input("用户背景设定（默认：沉迷二次元番剧") or "沉迷二次元番剧"
+        user_name = self.user_info.get("name", "张三")
+        user_age = self.user_info.get("age", "14")
+        user_gender = self.user_info.get("sex", "男")
+        user_personality = self.user_info.get("personality", "可爱的物品")
+        user_hobbies = self.user_info.get("hobby", "看番")
+        user_background = self.user_info.get("background", "初中生")
 
         template = f"""# 人物档案
 你的名字：{name}
-你的年龄：{age}
+你的年龄：{age}岁
 你的性别：{gender}
 你的性格：{personality}
 你的外貌：{appearance}
 你的兴趣爱好：{hobbies}
-你的背景设定：{background_desc}
-你看过的番剧：{watched_anime}
+你的背景设定：{background}
 
 用户的名字：{user_name}
-用户的年龄：{user_age}
+用户的年龄：{user_age}岁
 用户的性别：{user_gender}
 用户的性格：{user_personality}
 用户的兴趣爱好：{user_hobbies}
@@ -113,17 +116,11 @@ class NewUser:
             f.write(template)
 
 
-def add_user(username=None, image_dir="resources\\images\\", set_path="set\\"):
-    if not username:
-        username = input("请输入用户名：")
-    avatar_path = input("请输入用户头像图片路径：")
-    new_user = NewUser(username, avatar_path, image_dir, set_path)
+def add_user(user_info):
+    new_user = NewUser(user_info)
     new_user.generate_image()
     new_user.generate_mark()
     new_user.generate_touch()
     new_user.generate_chosen()
     new_user.add_set()
-    print(f"用户 {username} 已成功创建！")
-
-if __name__ == '__main__':
-    add_user()
+    return True

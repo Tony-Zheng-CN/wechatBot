@@ -1,131 +1,153 @@
-# WeChatBot - WeChat Robot
+# WeChatBot ¨C English Readme
 
-A feature-rich WeChat robot project integrating AI assistant, text-to-speech, image generation and more.
+A WeChat bot project that integrates an AI assistant, text-to-speech, image generation, and more.  
+<small><small><small><small><small>~~Although I treat her as my little sister :)~~</small></small></small></small></small>
 
-## Project Introduction
+## Project Overview
 
-WeChatBot is a Python-based WeChat robot project with the following main features:
+WeChatBot is a Python-based WeChat robot that offers:
 
-- AI chat assistant (supporting Ollama and FastChat)
-- Text-to-speech (TTS) functionality
-- Image generation capabilities (via Stable Diffusion API)
-- Graphical user interface (GUI)
-- Bing search integration
-- Memory management functionality
-- User management system
+- AI chat assistant (Ollama)  
+- Text-to-Speech via ChatTTS & EdgeTTS  
+- Image generation via Stable Diffusion API  
+- Graphical User Interface (GUI)  
+- Bing search integration  
+- Long-term memory management  
+- User-management system  
 
-This project aims to provide an intelligent WeChat robot solution that can engage in natural conversations, execute commands, generate images, and more.
+Its goal is to provide an intelligent WeChat bot capable of natural conversation, command execution, image creation, and more.
 
 ## Features
 
 ### AI Chat Assistant
-- Integration with multiple AI models (Ollama and FastChat)
-- Support for personalized character settings
-- Long-term memory management
-- Bing search integration for up-to-date information
+- Customizable persona settings  
+- Long-term memory management  
+- Bing search for up-to-date information  
+- Multimodal support (if the model allows)
 
 ### Text-to-Speech
-- Built-in TTS service
-- Support for various voice configuration options
+- TTS services included
 
 ### Image Generation
-- Integration with Stable Diffusion API
-- Support for text prompt-based image generation
+- Stable Diffusion API integration  
+- Prompt-based image creation
 
 ### User Management
-- Graphical user addition interface
-- User information configuration management
+- GUI-based user addition  
+- Profile and configuration management
 
-### Other Features
-- Hotkey support (Ctrl+Shift+Alt+Esc)
-- Configurable cache paths and model settings
-- Logging and debugging functionality
+### Other
+- Global hotkey (Ctrl+Shift+Alt+Esc) to force-quit  
+- Configurable cache & model paths  
+- Logging and debugging
 
-## Directory Structure
-â”œâ”€â”€ ai_agent/ # AI agent related modules 
-â”‚ â”œâ”€â”€ bing_crawler.py # Bing search crawler 
-â”‚ â”œâ”€â”€ fastchat_ver.py # FastChat version AI agent 
-â”‚ â”œâ”€â”€ memory_manger.py # Memory manager 
-â”‚ â”œâ”€â”€ ollama_ver.py # Ollama version AI agent 
-â”‚ â”œâ”€â”€ sd_api.py # Stable Diffusion API interface 
-â”‚ â”œâ”€â”€ tts.py # Text-to-speech service 
-â”‚ â””â”€â”€ system_format.txt # Default configuration 
-â”œâ”€â”€ resources/ # Resource files 
-â”‚ â””â”€â”€ help.txt # Help documentation 
-â”œâ”€â”€ set/ # User settings directory 
-â”œâ”€â”€ draw/ # Drawing output directory 
-â”œâ”€â”€ cache/ # Cache directory 
-â”œâ”€â”€ memories/ # Memory storage directory 
-â”œâ”€â”€ add_user.py # User addition functionality 
-â”œâ”€â”€ config.json # Main configuration file 
-â”œâ”€â”€ config_manager.py # Configuration manager 
-â”œâ”€â”€ gui.py # Graphical user interface 
-â”œâ”€â”€ gui_control.py # GUI control logic 
-â””â”€â”€ main.py # Main program entry
-## Installation and Configuration
+## Changelog
+
+| Version | Highlights | Date |
+|---------|------------|------|
+| v1.0.0  | Initial release | 2025-08-27 |
+| v1.0.1  | Modularized core modules<br/>GUI now uses ttkbootstrap<br/>Added OpenAI API adapter | 2025-08-28 |
+
+## Directory Layout
+
+```
+©À©¤©¤ ai_agent/            # AI-related modules  
+©¦   ©À©¤©¤ bing_crawler.py  # Bing search crawler  
+©¦   ©À©¤©¤ fastchat_ver.py  # FastChat AI agent (deprecated)  
+©¦   ©À©¤©¤ memory_manger.py # Memory manager  
+©¦   ©À©¤©¤ ollama_ver.py    # Ollama AI agent  
+©¦   ©À©¤©¤ api_ver.py       # API-style AI agent  
+©¦   ©À©¤©¤ sd_api.py        # Stable Diffusion API interface  
+©¦   ©À©¤©¤ tts.py           # Text-to-speech interface  
+©¦   ©¸©¤©¤ system_format.txt# Default configuration  
+©À©¤©¤ resources/           # Static assets  
+©¦   ©À©¤©¤ icon.txt         # App icon (customizable)  
+©¦   ©À©¤©¤ command_help_wechat.txt # In-chat help  
+©¦   ©¸©¤©¤ help.txt         # CLI help  
+©À©¤©¤ l2d_agent/           # Live2D module  
+©¦   ©¸©¤©¤ l2d_control.py   # Live2D avatar control  
+©À©¤©¤ set/                 # User settings  
+©À©¤©¤ cache/               # Temporary files  
+©À©¤©¤ memories/            # Persistent memory  
+©À©¤©¤ add_user.py          # Add-user utility  
+©À©¤©¤ config.json          # Main configuration  
+©À©¤©¤ config_manager.py    # Config loader/saver  
+©À©¤©¤ gui.py               # GUI entry point  
+©À©¤©¤ gui_control.py       # GUI-to-WeChat bridge  
+©À©¤©¤ core.py              # Core engine  
+©¸©¤©¤ main.py              # CLI entry point
+```
+
+## Installation & Setup
 
 ### Requirements
-- Python 3.7+
-- Required packages (defined in requirements.txt)
-- WeChat PC version **V3.x** (4.x not yet supported)
-- Optional:
-  - Stable Diffusion
+- Python 3.10+  
+- Dependencies listed in `requirements.txt`  
+- WeChat PC **v3.x** (v4.x not yet supported)  
+- Optional:  
+  - Stable Diffusion endpoint  
   - ChatTTS
 
-### Installation Steps
-1. Clone the project locally
-2. Install dependencies: `pip install -r requirements.txt`
-3. Configure related services (such as Ollama, Stable Diffusion, etc.)
-4. Run the main program: `python main.py`
+### Steps
+1. Clone the repo  
+2. Install deps: `pip install -r requirements.txt`  
+3. Configure external services (Ollama, Stable Diffusion, etc.)  
+4. Launch: `python main.py` (TUI) or `python gui.py` (GUI)
 
 ### Configuration
-- `config.json`: Main configuration file containing cache paths, model selection and other settings
-- `set/` directory: Stores user personalization setting files
-- `tts_config.json`: Text-to-speech configuration file
+- `config.json` ¨C main settings (cache paths, model choices¡­)  
+- `set/` ¨C per-user overrides  
+- `tts_config.json` ¨C TTS settings
 
 ## Usage
 
-### Starting the Program
-Run `python main.py` to start the program. The program will load configurations and initialize the AI agent.
+### Launching
+- CLI/TUI: `python main.py`  
+- GUI: `python gui.py` or type `gui` in TUI
 
 ### Hotkey
-- `Ctrl+Shift+Alt+Esc`: Force stop the robot
+- `Ctrl+Shift+Alt+Esc` ¨C force shutdown
 
-### Supported Commands
-- `/help`: Display help information
-- `/exit`: Exit the program
-- `/tts`: Toggle text-to-speech functionality
-- `/model`: Model management
-- `#draw [prompt]`: Generate image based on prompt
+### GUI
+A full GUI is provided for user management and configuration tweaks.
 
-### Graphical Interface
-The program provides a graphical user interface for user management, configuration adjustments and other operations.
+## Key Modules
 
-## Main Module Descriptions
+### AI Agent (`ai_agent/`)
+Handles all AI interactions:
 
-### AI Agent Modules (ai_agent/)
-Implements interaction functionality with AI models, supporting multiple model backends:
-- [ollama_ver.py](file://D:\Workspace_Tony\Data\projects\python\wechatbot\ai_agent\ollama_ver.py): Ollama model interface
-- ~~[fastchat_ver.py](file://D:\Workspace_Tony\Data\projects\python\wechatbot\ai_agent\fastchat_ver.py): FastChat model interface~~
-- [memory_manger.py](file://D:\Workspace_Tony\Data\projects\python\wechatbot\ai_agent\memory_manger.py): Memory management functionality
-- [bing_crawler.py](file://D:\Workspace_Tony\Data\projects\python\wechatbot\ai_agent\bing_crawler.py): Web search functionality
+- `ollama_ver.py` ¨C Ollama backend  
+- `fastchat_ver.py` ¨C FastChat backend (deprecated)  
+- `api_ver.py` ¨C Generic API backend  
+- `sd_api.py` ¨C Stable Diffusion wrapper  
+- `memory_manger.py` ¨C Conversation memory  
+- `bing_crawler.py` ¨C Web search
 
-### GUI Modules
-- [gui.py](file://D:\Workspace_Tony\Data\projects\python\wechatbot\gui.py): Graphical interface implementation
-- [gui_control.py](file://D:\Workspace_Tony\Data\projects\python\wechatbot\gui_control.py): Interface control logic
+### GUI (`gui.py`, `gui_control.py`)
+Tkinter/ttkbootstrap-based interface with live WeChat control.
 
-### Configuration Management
-- [config_manager.py](file://D:\Workspace_Tony\Data\projects\python\wechatbot\config_manager.py): Configuration file read/write
-- [config.json](file://D:\Workspace_Tony\Data\projects\python\wechatbot\config.json): Main configuration file
+### Configuration (`config_manager.py`, `config.json`)
+JSON-based, hot-reloadable settings.
 
-## Development and Contributions
+## Development & Contributing
+Issues and PRs are welcome.
 
-Issues and Pull Requests are welcome to improve the project.
+## Roadmap
+
+| Feature | Target Version | ETA |
+|---------|----------------|-----|
+| Support for newer WeChat | v1.0.3 | 2025-09 |
+| Live2D video calls | v1.1 | 2025-09 |
+| Group chat / multi-user | v1.2 | 2025-10 |
+
+<small>Timelines are estimates.</small>
 
 ## License
 
-[License information to be added]
+MIT
 
 ## Contact
 
-[Contact information to be added]
+zhengyifantony@outlook.com  
+[Ò»Ö»ÐÅÏ¢¿Î´ú±í @ Bilibili](https://space.bilibili.com/1969540992)  
+<small><small><small><small><small><small><small><small><small><small><small><small><small><small><small><small><small><small><small>[Something Interesting](resources/game/game.py)</small></small></small></small></small></small></small></small></small></small></small></small></small></small></small></small></small></small></small>

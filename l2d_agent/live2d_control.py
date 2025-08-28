@@ -6,11 +6,11 @@ import cv2
 import logging
 from pygame.locals import *
 from OpenGL.GL import *
-from lipsync import WavHandler
-wavHandler = WavHandler()
-lipSyncN = 3
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
 
 logger = logging.getLogger("live2d")
+
 
 
 class EmoModel:
@@ -249,15 +249,6 @@ class Live2d:
         self.model.SetOffset(0, -2)
         self.model.SetScale(3)
 
-        # 更新唇形同步参数
-        if self.lip_sync_enabled and self.lip_sync_data is not None and len(self.lip_sync_data) > 0:
-            # 获取当前唇形同步值
-            value = self.lip_sync_data[self.lip_sync_index]
-            # 更新参数
-            self.model.SetParameterValue(self.lip_sync_param, value)
-            # 更新索引，循环播放
-            self.lip_sync_index = (self.lip_sync_index + 1) % len(self.lip_sync_data)
-
         self.model.Update()
         self.model.Draw()
 
@@ -314,7 +305,6 @@ class Live2d:
         try:
             if os.path.exists(wav_file_path):
                 # 使用WavHandler处理WAV文件
-                self.lip_sync_data = wavHandler.process(wav_file_path, lipSyncN)
                 self.lip_sync_index = 0
                 self.lip_sync_enabled = True
                 logger.info(f"Lip sync data loaded from {wav_file_path}")

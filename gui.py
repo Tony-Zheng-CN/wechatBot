@@ -1,753 +1,722 @@
-import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox, filedialog
-import threading
+import tkinter
+from tkinter import *
+import tkinter.ttk as ttk
+from tkinter import messagebox, filedialog
+import sys
+import logging
 import os
-import time
 import shutil
+from PIL import Image, ImageTk
 
-import requests
-from PIL import Image
+try:
+    # noinspection PyUnresolvedReferences
+    import ttkbootstrap
+
+    tk = ttkbootstrap
+except ImportError:
+    tk = tkinter
+from core import *
 
 
+# 创建一个自定义的日志处理器，将日志输出到GUI文本框
+class GuiLogHandler(logging.Handler):
+    def __init__(self, text_widget):
+        super().__init__()
+        self.text_widget = text_widget
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.text_widget.insert(tk.END, msg + '\n')
+        self.text_widget.see(tk.END)
+        self.text_widget.update()
+
+
+# 创建一个自定义的stdout重定向类
+class StdoutRedirector:
+    def __init__(self, text_widget):
+        self.text_widget = text_widget
+
+    def write(self, text):
+        self.text_widget.insert(tk.END, text)
+        self.text_widget.see(tk.END)
+        self.text_widget.update()
+
+    def flush(self):
+        pass
+
+
+# 添加用户对话框
 class AddUserDialog(tk.Toplevel):
-    def __init__(self, image_path, set_path):
-        super().__init__()
+    def __init__(self, parent, core):
+        super().__init__(parent)
         self.title("添加用户")
-        self.geometry("400x300")
+        self.geometry("400x500")
+        self.core = core
+
+        # 用户信息变量
+        self.username = tk.StringVar()
+        self.user_image_path = tk.StringVar()
+        self.user_name = tk.StringVar()
+        self.user_age = tk.StringVar()
+        self.user_gender = tk.StringVar()
+        self.user_personality = tk.StringVar()
+        self.user_hobbies = tk.StringVar()
+        self.user_background = tk.StringVar()
+
         self.create_widgets()
-        self.main_image_path = image_path
-        self.set_path = set_path
 
     def create_widgets(self):
-        self.username_label = ttk.Label(self, text="用户名:")
-        self.username_label.grid(row=0, column=0, padx=5, pady=5)
-        self.username_entry = ttk.Entry(self)
-        self.username_entry.grid(row=0, column=1, padx=5, pady=5, columnspan=2)
-        self.user_image_label = ttk.Label(self, text="用户头像:")
-        self.user_image_label.grid(row=1, column=0, padx=5, pady=5)
-        self.user_image_entry = ttk.Entry(self)
-        self.user_image_entry.grid(row=1, column=1, padx=5, pady=5)
-        self.user_image_button = ttk.Button(self, text="选择图片", command=self.select_image)
-        self.user_image_button.grid(row=1, column=2, padx=5, pady=5)
-        self.user_name_label = ttk.Label(self, text="你的姓名:")
-        self.user_name_label.grid(row=2, column=0, padx=5, pady=5)
-        self.user_name_entry = ttk.Entry(self)
-        self.user_name_entry.grid(row=2, column=1, padx=5, pady=5, columnspan=2)
-        self.user_age_label = ttk.Label(self, text="你的年龄:")
-        self.user_age_label.grid(row=3, column=0, padx=5, pady=5)
-        self.user_age_entry = ttk.Entry(self)
-        self.user_age_entry.grid(row=3, column=1, padx=5, pady=5, columnspan=2)
-        self.user_gender_label = ttk.Label(self, text="你的性别:")
-        self.user_gender_label.grid(row=4, column=0, padx=5, pady=5)
-        self.user_gender_entry = ttk.Entry(self)
-        self.user_gender_entry.grid(row=4, column=1, padx=5, pady=5, columnspan=2)
-        self.user_personality_label = ttk.Label(self, text="你的性格:")
-        self.user_personality_label.grid(row=5, column=0, padx=5, pady=5)
-        self.user_personality_entry = ttk.Entry(self)
-        self.user_personality_entry.grid(row=5, column=1, padx=5, pady=5, columnspan=2)
-        self.user_hobbies_label = ttk.Label(self, text="你的爱好:")
-        self.user_hobbies_label.grid(row=6, column=0, padx=5, pady=5)
-        self.user_hobbies_entry = ttk.Entry(self)
-        self.user_hobbies_entry.grid(row=6, column=1, padx=5, pady=5, columnspan=2)
-        self.user_background_label = ttk.Label(self, text="你的背景:")
-        self.user_background_label.grid(row=7, column=0, padx=5, pady=5)
-        self.user_background_entry = ttk.Entry(self)
-        self.user_background_entry.grid(row=7, column=1, padx=5, pady=5, columnspan=2)
-        self.enter_button = ttk.Button(self, text="确定", command=self.add_user)
-        self.enter_button.grid(row=8, column=1, columnspan=3, padx=5, pady=5)
+        # 用户名
+        tk.Label(self, text="用户名:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        tk.Entry(self, textvariable=self.username, width=30).grid(row=0, column=1, padx=5, pady=5)
 
-    def add_user(self):
-        name = "郑若玲"
-        age = "13岁"
-        gender = "女"
-        personality = "温柔，小公举性格，偶尔毒舌但超可爱，兄控"
-        appearance = "圆脸，齐刘海，大眼睛，身高153cm，体重42kg"
-        hobbies = "追番、画画、听可爱系音乐、刷B站"
-        background_desc = "沉迷二次元番剧，宅，可爱系，绘画各种可爱的插画，有时会画一些有点黄的，B站ID:一只若玲酱"
-        watched_anime = "《别当哥哥了》，《孤独摇滚！》，《某超科学的电磁炮》"
+        # 用户头像
+        tk.Label(self, text="用户头像:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
+        tk.Entry(self, textvariable=self.user_image_path, width=25).grid(row=1, column=1, padx=5, pady=5)
+        tk.Button(self, text="浏览", command=self.browse_image).grid(row=1, column=2, padx=5, pady=5)
 
-        user_name = "XXX"
-        user_age = "14岁"
-        user_gender = "男"
-        user_personality = "萝莉控"
-        user_hobbies = "追番"
-        user_background = "沉迷二次元番剧"
+        # 用户姓名
+        tk.Label(self, text="姓名:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
+        tk.Entry(self, textvariable=self.user_name, width=30).grid(row=2, column=1, padx=5, pady=5)
 
-        if self.user_name_entry.get() != "":
-            user_name = self.user_name_entry.get()
-        if self.user_age_entry.get() != "":
-            user_age = self.user_age_entry.get()
-        if self.user_gender_entry.get() != "":
-            user_gender = self.user_gender_entry.get()
-        if self.user_personality_entry.get() != "":
-            user_personality = self.user_personality_entry.get()
-        if self.user_hobbies_entry.get() != "":
-            user_hobbies = self.user_hobbies_entry.get()
-        if self.user_background_entry.get() != "":
-            user_background = self.user_background_entry.get()
-        self.set_path = os.path.join(self.set_path, f"{user_name}.txt")
-        self.output_path = str(os.path.join(self.main_image_path, user_name))
-        self.image_path = os.path.join(self.output_path, "image.png")
-        self.mark_path = os.path.join(self.output_path, "mark.png")
-        self.touch_path = os.path.join(self.output_path, "touch_head.png")
-        self.chosen_path = os.path.join(self.output_path, "chosen.png")
-        template = f"""# 人物档案
-        你的名字：{name}
-        你的年龄：{age}
-        你的性别：{gender}
-        你的性格：{personality}
-        你的外貌：{appearance}
-        你的兴趣爱好：{hobbies}
-        你的背景设定：{background_desc}
-        你看过的番剧：{watched_anime}
+        # 用户年龄
+        tk.Label(self, text="年龄:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
+        tk.Entry(self, textvariable=self.user_age, width=30).grid(row=3, column=1, padx=5, pady=5)
 
-        用户的名字：{user_name}
-        用户的年龄：{user_age}
-        用户的性别：{user_gender}
-        用户的性格：{user_personality}
-        用户的兴趣爱好：{user_hobbies}
-        用户的背景设定：{user_background}
-        """
-        if os.path.exists(self.output_path):
-            if messagebox.askyesno("提示", "是否覆盖？"):
-                shutil.rmtree(self.output_path)
-            else:
-                return False
-        os.mkdir(self.output_path)
-        self.generate_image()
-        self.generate_mark()
-        self.generate_touch()
-        self.generate_chosen()
-        with open(self.set_path, "w", encoding="utf-8") as f:
-            f.write(template)
-        self.destroy()
+        # 用户性别
+        tk.Label(self, text="性别:").grid(row=4, column=0, sticky="w", padx=5, pady=5)
+        tk.Entry(self, textvariable=self.user_gender, width=30).grid(row=4, column=1, padx=5, pady=5)
 
-    def generate_image(self):
-        avatar = Image.open(self.user_image_entry.get())
-        resized_avatar = avatar.resize((50, 50), Image.Resampling.LANCZOS)
-        resized_avatar.save(self.image_path)
+        # 用户性格
+        tk.Label(self, text="性格:").grid(row=5, column=0, sticky="w", padx=5, pady=5)
+        tk.Entry(self, textvariable=self.user_personality, width=30).grid(row=5, column=1, padx=5, pady=5)
 
-    # 2. 生成 mark.png: 背景 + 用户头像部分 + 未读标记
-    def generate_mark(self):
-        # 创建背景图像 (32x32)
-        background = Image.new("RGB", (32, 32), "#EBE9E8")
+        # 用户爱好
+        tk.Label(self, text="爱好:").grid(row=6, column=0, sticky="w", padx=5, pady=5)
+        tk.Entry(self, textvariable=self.user_hobbies, width=30).grid(row=6, column=1, padx=5, pady=5)
 
-        # 打开并裁剪用户头像的右上角 16x16 部分
-        avatar = Image.open(self.image_path)
-        cropped_avatar = avatar.crop((50 - 27, 0, 50, 22))  # 右上角 16x16
+        # 用户背景
+        tk.Label(self, text="背景:").grid(row=7, column=0, sticky="w", padx=5, pady=5)
+        tk.Entry(self, textvariable=self.user_background, width=30).grid(row=7, column=1, padx=5, pady=5)
 
-        # 将裁剪后的头像粘贴到背景的右下角
-        background.paste(cropped_avatar, (0, 10))
+        # 按钮
+        button_frame = tk.Frame(self)
+        button_frame.grid(row=8, column=0, columnspan=3, pady=20)
 
-        # 加载并粘贴 unread_mark.png 到顶部居中
-        unread_mark_path = str(os.path.join(self.main_image_path, "unread_mark.png"))  # 替换为实际的 unread_mark.png 路径
-        unread_mark = Image.open(unread_mark_path).convert("RGBA")
-        unread_mark = unread_mark.resize((16, 16), Image.Resampling.LANCZOS)  # 假设 unread_mark.png 是 16x16
-        background.paste(unread_mark, (16, 0), unread_mark)  # 居中粘贴
+        tk.Button(button_frame, text="添加", command=self.add_user).pack(side="left", padx=5)
+        tk.Button(button_frame, text="取消", command=self.destroy).pack(side="left", padx=5)
 
-        background.save(self.mark_path)
-
-    def generate_chosen(self):
-        # 创建背景图像 (32x32)
-        background = Image.new("RGB", (60, 60), "#C8C8CA")
-
-        # 打开并裁剪用户头像的右上角 16x16 部分
-        avatar = Image.open(self.image_path)
-
-        # 将裁剪后的头像粘贴到背景的右下角
-        background.paste(avatar, (5, 5))
-
-        background.save(self.chosen_path)
-
-    # 3. 生成 touch_head.png: 背景 + 缩放后的用户头像
-    def generate_touch(self):
-        # 打开背景图像
-        touch_head_background_path = str(
-            os.path.join(self.main_image_path, "touch_head.png"))  # 替换为实际的 touch_head.png 路径
-        background = Image.open(touch_head_background_path)
-
-        # 打开用户头像并缩放为 42x40
-        avatar = Image.open(self.image_path)
-        resized_avatar = avatar.resize((42, 40), Image.Resampling.LANCZOS)
-
-        # 粘贴到右侧最上方
-        background.paste(resized_avatar, (background.width - resized_avatar.width, 0))
-
-        background.save(self.touch_path)
-
-    def select_image(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
+    def browse_image(self):
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp")]
+        )
         if file_path:
-            self.user_image_entry.delete(0, tk.END)
-            self.user_image_entry.insert(0, file_path)
-
-
-class WeChatBotGUI(tk.Tk):
-    def __init__(self, main_module):
-        super().__init__()
-        self.main = main_module
-        self.title("微信机器人")
-        self.geometry("800x500")  # 减小窗口尺寸
-        self.is_running = False
-        self.user = ""
-        self.create_widgets()
-
-    def create_widgets(self):
-        # 创建菜单栏
-        self.create_menu()
-
-        # 创建主框架
-        main_frame = ttk.Frame(self)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        # 左侧面板（输出文本）
-        left_frame = ttk.Frame(main_frame)
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        self.output_text = scrolledtext.ScrolledText(left_frame, wrap=tk.WORD, width=70, height=20)
-        self.output_text.pack(fill=tk.BOTH, expand=True)
-
-        # 右侧面板（控制区域）- 精简版
-        right_frame = ttk.Frame(main_frame)
-        right_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=5)
-
-        # 用户选择区域
-        user_frame = ttk.LabelFrame(right_frame, text="用户")
-        user_frame.pack(pady=5, fill=tk.X)
-
-        self.user_var = tk.StringVar()
-        self.user_combobox = ttk.Combobox(user_frame, textvariable=self.user_var, state="readonly", width=15)
-        self.user_combobox.pack(pady=2, padx=2, fill=tk.X)
-
-        # 模型设置区域
-        model_frame = ttk.LabelFrame(right_frame, text="模型")
-        model_frame.pack(pady=5, fill=tk.X)
-
-        self.model_var = tk.StringVar()
-        self.model_combobox = ttk.Combobox(model_frame, textvariable=self.model_var, state="readonly", width=15)
-        self.model_combobox.pack(pady=2, padx=2, fill=tk.X)
-
-        # 控制按钮区域
-        control_frame = ttk.Frame(right_frame)
-        control_frame.pack(pady=10, fill=tk.X)
-
-        self.start_button = ttk.Button(control_frame, text="开始", command=self.toggle_run)
-        self.start_button.pack(pady=2, padx=2, fill=tk.X)
-
-        # 状态区域
-        status_frame = ttk.Frame(right_frame)
-        status_frame.pack(pady=5, fill=tk.X)
-
-        self.debug_var = tk.BooleanVar(value=self.main.debug)
-        self.tts_var = tk.BooleanVar(value=self.main.tts)
-
-        ttk.Checkbutton(status_frame, text="调试", variable=self.debug_var, command=self.toggle_debug).pack(pady=1,
-                                                                                                           padx=2,
-                                                                                                           anchor=tk.W)
-        ttk.Checkbutton(status_frame, text="TTS", variable=self.tts_var, command=self.toggle_tts).pack(pady=1,
-                                                                                                       padx=2,
-                                                                                                       anchor=tk.W)
-
-        self.model_combobox.bind("<<ComboboxSelected>>", self.change_model)
-        self.user_combobox.bind("<<ComboboxSelected>>", self.set_user)
-
-        self.update_user_list()
-        self.update_model_list()
-
-    def create_menu(self):
-        menubar = tk.Menu(self)
-        self.config(menu=menubar)
-
-        # 用户菜单
-        user_menu = tk.Menu(menubar, tearoff=0)
-        user_menu.add_command(label="添加用户", command=self.add_user)
-        user_menu.add_command(label="删除用户", command=self.delete_user)
-        user_menu.add_separator()
-        user_menu.add_command(label="管理记忆", command=self.manage_memory)
-        user_menu.add_command(label="删除记忆", command=self.delete_memory)
-        user_menu.add_separator()
-        user_menu.add_command(label="列出所有用户", command=self.list_users)
-        menubar.add_cascade(label="用户", menu=user_menu)
-
-        # 模型菜单
-        model_menu = tk.Menu(menubar, tearoff=0)
-        model_menu.add_command(label="模型列表", command=self.show_model_list)
-        menubar.add_cascade(label="模型", menu=model_menu)
-
-        # 工具菜单
-        tools_menu = tk.Menu(menubar, tearoff=0)
-        tools_menu.add_command(label="清除缓存", command=self.clear_cache)
-        tools_menu.add_command(label="设置缓存路径", command=self.set_cache_path)
-        tools_menu.add_separator()
-        tools_menu.add_command(label="切换调试模式", command=self.toggle_debug)
-        tools_menu.add_command(label="切换语音合成", command=self.toggle_tts)
-        menubar.add_cascade(label="工具", menu=tools_menu)
-
-        # 帮助菜单
-        help_menu = tk.Menu(menubar, tearoff=0)
-        help_menu.add_command(label="关于", command=self.show_about)
-        help_menu.add_command(label="帮助", command=self.show_help)
-        menubar.add_cascade(label="帮助", menu=help_menu)
-
-    def update_user_list(self):
-        if os.path.exists("set"):
-            users = [os.path.splitext(f)[0] for f in os.listdir("set") if os.path.isfile(os.path.join("set", f))]
-            self.user_combobox['values'] = users
-            if users:
-                self.user_combobox.current(0)
-        else:
-            self.user_combobox['values'] = []
-
-    def update_model_list(self):
-        try:
-            if self.main.launcher == "ollama":
-                self.model_combobox['values'] = self.main.olML()
-            else:
-                self.model_combobox['values'] = self.main.fcML()
-            if self.model_combobox['values']:
-                self.model_combobox.set(self.main.model)
-        except Exception as e:
-            self.log(f"获取模型列表失败: {e}")
-
-    def log(self, message):
-        self.output_text.insert(tk.END, message + "\n")
-        self.output_text.see(tk.END)
-
-    def set_user(self, event):
-        if self.user_combobox.get():
-            self.user = self.user_combobox.get()
-            self.main.set_name(self.user)
-            self.log(f"用户设置为: {self.user}")
-        else:
-            messagebox.showwarning("警告", "请选择一个用户")
+            self.user_image_path.set(file_path)
 
     def add_user(self):
-        try:
-            user = AddUserDialog(image_path="resources\\images\\", set_path="set\\")
-            self.wait_window(user)
-            self.update_user_list()
-            self.log(f"用户添加成功")
-        except Exception as e:
-            messagebox.showerror("错误", f"添加用户失败: {e}")
-
-    def delete_user(self):
-        if not self.user_combobox.get():
-            messagebox.showwarning("警告", "请选择要删除的用户")
+        # 检查必填字段
+        if not self.username.get():
+            messagebox.showerror("错误", "请输入用户名")
             return
 
-        if messagebox.askyesno("确认", f"确定要删除用户 {self.user_combobox.get()} 吗?"):
+        try:
+            # 创建用户信息字典
+            user_info = {
+                "username": self.username.get(),
+                "name": self.user_name.get() or "未设置",
+                "age": self.user_age.get() or "未设置",
+                "sex": self.user_gender.get() or "未设置",
+                "hobby": self.user_hobbies.get() or "未设置",
+                "personality": self.user_personality.get() or "未设置",
+                "background": self.user_background.get() or "未设置"
+            }
+
+            # 调用core中的用户添加方法
+            result = self.core.user_add(user_info)
+
+            if result is True:
+                # 复制用户头像（如果提供了）
+                if self.user_image_path.get():
+                    self.copy_user_image()
+
+                messagebox.showinfo("成功", f"用户 {self.username.get()} 添加成功")
+                self.destroy()
+            else:
+                messagebox.showerror("错误", f"添加用户失败: {result}")
+        except Exception as e:
+            messagebox.showerror("错误", f"添加用户时发生错误: {str(e)}")
+
+    def copy_user_image(self):
+        try:
+            # 创建用户资源目录
+            user_resource_dir = os.path.join("resources", "images", self.username.get())
+            os.makedirs(user_resource_dir, exist_ok=True)
+
+            # 复制用户头像
+            if os.path.exists(self.user_image_path.get()):
+                # 原始图像路径
+                src_image_path = self.user_image_path.get()
+
+                # 目标图像路径
+                dst_image_path = os.path.join(user_resource_dir, "image.png")
+
+                # 复制并调整图像大小
+                image = Image.open(src_image_path)
+                image = image.resize((50, 50), Image.Resampling.LANCZOS)
+                image.save(dst_image_path)
+
+                # 生成其他所需图像
+                self.generate_mark_image(user_resource_dir, dst_image_path)
+                self.generate_chosen_image(user_resource_dir, dst_image_path)
+                self.generate_touch_image(user_resource_dir, dst_image_path)
+        except Exception as e:
+            print(f"复制用户图像时出错: {e}")
+
+    def generate_mark_image(self, user_dir, image_path):
+        try:
+            # 创建背景图像 (32x32)
+            background = Image.new("RGB", (32, 32), "#EBE9E8")
+
+            # 打开并裁剪用户头像的右上角部分
+            avatar = Image.open(image_path)
+            cropped_avatar = avatar.crop((50 - 27, 0, 50, 22))
+
+            # 将裁剪后的头像粘贴到背景的右下角
+            background.paste(cropped_avatar, (0, 10))
+
+            # 加载并粘贴 unread_mark.png 到顶部居中
+            unread_mark_path = os.path.join("resources", "images", "unread_mark.png")
+            if os.path.exists(unread_mark_path):
+                unread_mark = Image.open(unread_mark_path).convert("RGBA")
+                unread_mark = unread_mark.resize((16, 16), Image.Resampling.LANCZOS)
+                background.paste(unread_mark, (16, 0), unread_mark)
+
+            mark_path = os.path.join(user_dir, "mark.png")
+            background.save(mark_path)
+        except Exception as e:
+            print(f"生成mark图像时出错: {e}")
+
+    def generate_chosen_image(self, user_dir, image_path):
+        try:
+            # 创建背景图像 (60x60)
+            background = Image.new("RGB", (60, 60), "#C8C8CA")
+
+            # 打开用户头像
+            avatar = Image.open(image_path)
+
+            # 将头像粘贴到背景中心
+            background.paste(avatar, (5, 5))
+
+            chosen_path = os.path.join(user_dir, "chosen.png")
+            background.save(chosen_path)
+        except Exception as e:
+            print(f"生成chosen图像时出错: {e}")
+
+    def generate_touch_image(self, user_dir, image_path):
+        try:
+            # 打开背景图像
+            touch_background_path = os.path.join("resources", "images", "touch_head.png")
+            if os.path.exists(touch_background_path):
+                background = Image.open(touch_background_path)
+
+                # 打开用户头像并缩放
+                avatar = Image.open(image_path)
+                resized_avatar = avatar.resize((42, 40), Image.Resampling.LANCZOS)
+
+                # 粘贴到右侧最上方
+                background.paste(resized_avatar, (background.width - resized_avatar.width, 0))
+
+                touch_path = os.path.join(user_dir, "touch_head.png")
+                background.save(touch_path)
+        except Exception as e:
+            print(f"生成touch图像时出错: {e}")
+
+
+class App:
+    def __init__(self):
+        self.logger = logging.getLogger("GUI")
+        self.core = WeChatBot()
+        if tk == tkinter:
+            self.win = tkinter.Tk()
+        elif tk == ttkbootstrap:
+            self.win = ttkbootstrap.Window()
+        self.win.title(f"WeChatBotGUI")
+        self.win.geometry("800x600")
+        self._create_widgets()
+
+        # 重定向stdout和stderr到GUI文本框
+        sys.stdout = StdoutRedirector(self.output_text)
+        sys.stderr = StdoutRedirector(self.output_text)
+
+        # 添加日志处理器，将日志输出到GUI文本框
+        gui_handler = GuiLogHandler(self.output_text)
+        gui_handler.setFormatter(logging.Formatter('[%(levelname)s][%(name)s]%(message)s'))
+        logging.getLogger().addHandler(gui_handler)
+
+        # 设置日志级别
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    def _update_vars(self):
+        core_info = self.core.get_info()
+        self.debug.set(core_info.get("debug"))
+        self.tts.set(core_info.get("tts"))
+        self.draw.set(core_info.get("enable_draw"))
+        self.running.set(core_info.get("running"))
+        self.tts_path.set(core_info.get("tts_path"))
+        self.llm_path.set(core_info.get("llm_path"))
+        self.sd_path.set(core_info.get("sd_path"))
+        self.user.set(core_info.get("user"))
+        self.model.set(core_info.get("model"))
+        self.launcher.set(core_info.get("launcher"))
+        self.cache_path.set(core_info.get("cache_path"))
+        self.l2d_model.set(core_info.get("l2d_model"))
+
+    def update_tk(self):
+        self._update_vars()
+        user_list = self.core.user_list()
+        model_list = self.core.llm_model_list()
+
+        self.user_ccb.config(values=user_list)
+        self.model_ccb.config(values=model_list)
+        self.launcher_ccb.config(values=["ollama", "fastchat", "openai"])
+
+    def _create_widgets(self):
+        self.logger.info("Creating widgets...")
+
+        # 创建变量
+        self.running = tk.BooleanVar()
+        self.debug = tk.BooleanVar()
+        self.tts = tk.BooleanVar()
+        self.draw = tk.BooleanVar()
+        self.user = tk.StringVar()
+        self.model = tk.StringVar()
+        self.launcher = tk.StringVar()
+        self.cache_path = tk.StringVar()
+        self.tts_path = tk.StringVar()
+        self.llm_path = tk.StringVar()
+        self.sd_path = tk.StringVar()
+        self.l2d_model = tk.StringVar()
+        self._update_vars()
+
+        # 获取窗口尺寸
+        self.win.update()
+        height = self.win.winfo_height() or 600
+        width = self.win.winfo_width() or 800
+
+        # 创建容器
+        self.output_frame = tk.Frame(self.win, width=width // 2, height=height)
+        self.info_frame = tk.Frame(self.win, width=width // 2, height=height // 4 * 3)
+        self.control_frame = tk.Frame(self.win, width=width // 2, height=height // 4)
+
+        # 创建控件(output_frame)
+        self.output_text = tk.Text(self.output_frame, width=width // 3 * 2 // 8, height=height // 20)
+        self.output_scrollbar = tk.Scrollbar(self.output_frame, orient="vertical", command=self.output_text.yview)
+        self.output_text.config(yscrollcommand=self.output_scrollbar.set)
+
+        # 创建控件(info_frame)
+        self.debug_rb = tk.Checkbutton(self.info_frame, text="Debug: ", variable=self.debug, command=self.toggle_debug)
+        self.tts_rb = tk.Checkbutton(self.info_frame, text="TTS: ", variable=self.tts, command=self.toggle_tts)
+        self.draw_rb = tk.Checkbutton(self.info_frame, text="Enable draw: ", variable=self.draw,
+                                      command=self.toggle_draw)
+
+        self.user_label = tk.Label(self.info_frame, text="User: ")
+        self.user_ccb = ttk.Combobox(self.info_frame, textvariable=self.user, state="readonly")
+
+        self.model_label = tk.Label(self.info_frame, text="Model: ")
+        # 修复语法错误：使用正确的三元运算符
+        model_list = self.core.llm_model_list()
+        state = "readonly" if model_list else "normal"
+        self.model_ccb = ttk.Combobox(self.info_frame, textvariable=self.model, state=state)
+
+        self.launcher_label = tk.Label(self.info_frame, text="Launcher: ")
+        self.launcher_ccb = ttk.Combobox(self.info_frame, textvariable=self.launcher, state="readonly")
+
+        # 使用StringVar的值而不是直接获取
+        self.cache_path_label = tk.Label(self.info_frame, textvariable=self.cache_path)
+        self.tts_path_label = tk.Label(self.info_frame, textvariable=self.tts_path)
+        self.llm_path_label = tk.Label(self.info_frame, textvariable=self.llm_path)
+        self.sd_path_label = tk.Label(self.info_frame, textvariable=self.sd_path)
+        self.l2d_model_label = tk.Label(self.info_frame, textvariable=self.l2d_model)
+
+        # 创建控件(control_frame)
+        self.start_button = tk.Button(self.control_frame, text="Start", command=self.start_core)
+        self.settings_button = tk.Button(self.control_frame, text="Settings", command=self.open_settings)
+        self.user_button = tk.Button(self.control_frame, text="User Management", command=self.open_user_management)
+
+        # 布局
+        self.output_text.pack(side="left", fill="both", expand=True)
+        self.output_scrollbar.pack(side="right", fill="y")
+
+        self.debug_rb.grid(row=0, column=0, sticky="w")
+        self.tts_rb.grid(row=0, column=1, sticky="w")
+        self.draw_rb.grid(row=0, column=2, sticky="w")
+
+        self.user_label.grid(row=1, column=0, sticky="w")
+        self.user_ccb.grid(row=1, column=1, columnspan=3, sticky="ew", padx=5)
+
+        self.model_label.grid(row=2, column=0, sticky="w")
+        self.model_ccb.grid(row=2, column=1, columnspan=3, sticky="ew", padx=5)
+
+        self.launcher_label.grid(row=3, column=0, sticky="w")
+        self.launcher_ccb.grid(row=3, column=1, columnspan=3, sticky="ew", padx=5)
+
+        # 更新标签文本
+        self.update_labels()
+
+        self.start_button.pack(pady=5, fill="x")
+        self.settings_button.pack(pady=5, fill="x")
+        self.user_button.pack(pady=5, fill="x")
+
+        # 配置网格权重
+        self.info_frame.grid_columnconfigure(1, weight=1)
+        self.info_frame.grid_columnconfigure(2, weight=1)
+        self.info_frame.grid_columnconfigure(3, weight=1)
+
+        self.info_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+        self.control_frame.grid(row=1, column=1, sticky="ew", padx=5, pady=5)
+        self.output_frame.grid(row=0, column=0, rowspan=2, sticky="nsew", padx=5, pady=5)
+
+        # 配置主窗口网格权重
+        self.win.grid_columnconfigure(0, weight=1)
+        self.win.grid_columnconfigure(1, weight=1)
+        self.win.grid_rowconfigure(0, weight=1)
+        self.win.grid_rowconfigure(1, weight=0)
+
+        self.update_tk()
+
+        # 绑定事件
+        self.user_ccb.bind("<<ComboboxSelected>>", self.on_user_selected)
+        self.model_ccb.bind("<<ComboboxSelected>>", self.on_model_selected)
+        self.launcher_ccb.bind("<<ComboboxSelected>>", self.on_launcher_selected)
+
+    def update_labels(self):
+        # 更新显示配置信息的标签
+        self.cache_path.set(f"Cache path: {self.core.cache_path}")
+        self.tts_path.set(f"TTS path: {self.core.tts_path}")
+        self.llm_path.set(f"LLM path: {self.core.llm_path}")
+        self.sd_path.set(f"SD path: {self.core.sd_path}")
+        self.l2d_model.set(f"Live2D model: {self.core.l2d_model}")
+
+    def on_user_selected(self, event):
+        selected_user = self.user.get()
+        if selected_user:
+            self.core.user_set(selected_user)
+
+    def on_model_selected(self, event):
+        selected_model = self.model.get()
+        if selected_model:
             try:
-                user = self.user_combobox.get()
-                if os.path.exists(f"memories\\{user}.txt"):
-                    os.remove(f"memories\\{user}.txt")
-                if os.path.exists(f"set\\{user}.txt"):
-                    os.remove(f"set\\{user}.txt")
-                if os.path.exists(f"resources\\{user}"):
-                    shutil.rmtree(f"resources\\{user}")
-                self.update_user_list()
-                self.log(f"用户 {user} 删除成功")
+                self.core.llm_model_set(selected_model)
+                self.log_message(f"Model set to: {selected_model}")
             except Exception as e:
-                messagebox.showerror("错误", f"删除用户失败: {e}")
+                self.log_message(f"Error setting model: {e}")
 
-    def manage_memory(self):
-        if not self.user_combobox.get():
-            messagebox.showwarning("警告", "请选择用户")
-            return
-
-        user = self.user_combobox.get()
-        if not os.path.exists(f"memories\\{user}.txt"):
-            messagebox.showinfo("信息", "当前用户没有长期记忆")
-            return
-
-        memory_content = open(f"memories\\{user}.txt", "r", encoding="utf-8").read()
-        memory_window = tk.Toplevel(self)
-        memory_window.title(f"{user} 的记忆")
-        memory_window.geometry("600x400")
-
-        text = scrolledtext.ScrolledText(memory_window, wrap=tk.WORD)
-        text.pack(fill=tk.BOTH, expand=True)
-        text.insert(tk.END, memory_content)
-
-        def save_memory():
-            with open(f"memories\\{user}.txt", "w", encoding="utf-8") as f:
-                f.write(text.get(1.0, tk.END))
-            messagebox.showinfo("信息", "记忆已保存")
-
-        ttk.Button(memory_window, text="保存记忆", command=save_memory).pack(pady=5)
-
-    def list_users(self):
-        if os.path.exists("set"):
-            users = [os.path.splitext(f)[0] for f in os.listdir("set") if os.path.isfile(os.path.join("set", f))]
-            if users:
-                self.log("用户列表: " + ", ".join(users))
-            else:
-                self.log("暂无用户")
-        else:
-            self.log("用户目录不存在")
-
-    def change_model(self, event):
-        if self.model_combobox.get():
-            new_model = self.model_combobox.get()
-            if new_model in self.model_combobox['values']:
-                self.main.model = new_model
-                self.main.save_config(self.main.cache_path, self.main.model, self.main.tts, self.main.debug,
-                                      self.main.launcher, getattr(self.main, 'enable_draw', False))
-                self.log(f"模型已切换为: {new_model}")
-            else:
-                messagebox.showwarning("警告", f"模型 {new_model} 不存在")
-        else:
-            messagebox.showwarning("警告", "请选择模型")
-
-    def show_model_list(self):
-        try:
-            if self.main.launcher == "ollama":
-                model_list = self.main.olML()
-            else:
-                model_list = self.main.fcML()
-            self.log(f"模型列表: {model_list}")
-        except Exception as e:
-            self.log(f"获取模型列表失败: {e}")
-
-    def clear_cache(self):
-        try:
-            self.main.clear_cache()
-            self.log("缓存已清空")
-        except Exception as e:
-            self.log(f"清空缓存失败: {e}")
+    def on_launcher_selected(self, event):
+        selected_launcher = self.launcher.get()
+        if selected_launcher in ["ollama", "fastchat", "openai"]:
+            try:
+                self.core.llm_model_launcher_set(selected_launcher)
+                self.log_message(f"Launcher set to: {selected_launcher}")
+                # 更新模型列表
+                self.update_tk()
+            except Exception as e:
+                self.log_message(f"Error setting launcher: {e}")
 
     def toggle_debug(self):
-        self.main.debug = self.debug_var.get()
-        self.main.save_config(self.main.cache_path, self.main.model, self.main.tts, self.main.debug, self.main.launcher, getattr(self.main, 'enable_draw', False))
-        self.log(f"调试模式: {'开启' if self.main.debug else '关闭'}")
+        try:
+            self.core.set_debug()
+            self.log_message(f"Debug mode: {'enabled' if self.core.debug else 'disabled'}")
+        except Exception as e:
+            self.log_message(f"Error toggling debug: {e}")
 
     def toggle_tts(self):
-        self.main.tts = self.tts_var.get()
-        self.main.save_config(self.main.cache_path, self.main.model, self.main.tts, self.main.debug, self.main.launcher, getattr(self.main, 'enable_draw', False))
-        self.log(f"语音合成: {'开启' if self.main.tts else '关闭'}")
-
-    def set_cache_path(self):
-        path = tk.filedialog.askdirectory(initialdir=self.main.cache_path)
-        if path:
-            self.main.set_cache_dir(path)
-            self.main.save_config(path, self.main.model, self.main.tts, self.main.debug, self.main.launcher, getattr(self.main, 'enable_draw', False))
-            self.log(f"缓存路径已设置为: {path}")
-
-    def show_about(self):
-        messagebox.showinfo("关于", "微信机器人 v1.0\n基于main.py构建的GUI界面")
-
-    def show_help(self):
-        messagebox.showinfo("帮助", "请参考main.py中的help.txt文件")
-
-    def toggle_run(self):
-        if not self.user_combobox.get():
-            messagebox.showwarning("警告", "请先设置用户")
-            return
-
-        self.is_running = not self.is_running
-        self.start_button.config(text="停止" if self.is_running else "开始")
-        self.user = self.user_combobox.get()
-        self.main.set_name(self.user)
-
-        if self.is_running:
-            self.log("开始运行...")
-            self.run_thread = threading.Thread(target=self.run_bot)
-            self.run_thread.start()
-
-    def delete_memory(self):
-        user = self.user_combobox.get()
-        if not user:
-            messagebox.showwarning("警告", "请先选择用户")
-            return
-
-        memory_path = f"memories\\{user}.txt"
-        if not os.path.exists(memory_path):
-            messagebox.showinfo("提示", f"用户 {user} 没有记忆文件")
-            return
-
-        if messagebox.askyesno("确认", f"确定要删除用户 {user} 的记忆吗？"):
-            try:
-                os.remove(memory_path)
-                self.log(f"用户 {user} 的记忆已删除")
-                messagebox.showinfo("成功", f"用户 {user} 的记忆已删除")
-            except Exception as e:
-                messagebox.showerror("错误", f"删除记忆失败：{e}")
-
-    def run_bot(self):
         try:
-            stop_flag = False
-            self.main.activate_wechat_window()
-            place = self.main.click_user()
-            self.log(f"模型: {self.main.model}\n运行器: {self.main.launcher}")
-
-            if place:
-                if self.main.debug:
-                    self.main.send_message(f"[DEBUG]{self.main.model}已接入")
-                self.main.clear_cache()
-                self.main.click_user_next()
-
-                if self.main.launcher == "fastchat":
-                    ai_agent = self.main.fcAIAgent(user_name=self.user)
-                elif self.main.launcher == "ollama":
-                    ai_agent = self.main.olAIAgent(user_name=self.user, model=self.main.model)
-
-                while self.is_running and not stop_flag:
-                    place = self.main.check_unread_message()
-                    if place:
-                        self.main.pag.click(x=place[0] + 30, y=place[1] + 20)
-                        new_message = self.main.get_new_message()
-
-                        if not new_message:
-                            self.main.click_user_next()
-                            continue
-
-                        message_type = new_message[0]
-                        if self.main.debug:
-                            self.log(f"[DEBUG]新消息: {new_message}")
-
-                        if new_message[0]:
-                            if new_message[0] == "text":
-                                new_message = new_message[1]
-                                if new_message.startswith("#"):
-                                    if new_message.split(" ")[0] == "#call":
-                                        type_text = new_message.split(" ")[1]
-                                        if type_text == "sound":
-                                            self.main.call_sound()
-                                            if self.main.debug:
-                                                self.log("[DEBUG]sound call")
-                                        elif type_text == "video":
-                                            self.main.call_video()
-                                            if self.main.debug:
-                                                self.log("[DEBUG]video call")
-                                    elif new_message.split(" ")[0] == "#open":
-                                        type_text = new_message.split(" ")[1]
-                                        message_text = new_message.split(" ")[2]
-                                        if type_text == "web":
-                                            self.main.send_message(f"已经在哥哥的电脑上打开：{message_text}")
-                                            self.main.open_web(message_text)
-                                            if self.main.debug:
-                                                self.log(f"[DEBUG]open website{message_text}")
-                                    elif new_message.split(" ")[0] == "#draw":
-                                        self.main.send_message("正在绘画...")
-                                        prompt = new_message.split(" ")[1]
-                                        self.log(f"[DEBUG]绘画提示词: {prompt}")
-                                        self.main.send_message("正在绘画...")
-                                        self.main.send_file(self.main.sd_api(new_message.split(" ")[1]))
-                                        if self.debug_var.get():
-                                            self.log(f"[DEBUG]sd draw.prompt{new_message.split(' ')[1]}")
-                                elif new_message.startswith("/"):
-                                    if new_message == "/exit":
-                                        self.is_running = False
-                                    elif new_message == "/help":
-                                        self.main.send_message(self.main.help_text)
-                                        self.log("[DEBUG]显示帮助信息")
-                                    elif new_message == "/tts":
-                                        self.main.tts = not self.main.tts
-                                        self.tts_var.set(self.main.tts)
-                                        if self.main.debug:
-                                            self.main.send_message(f"[DEBUG]TTS:{self.main.tts}")
-                                            self.log(f"[DEBUG]TTS状态: {self.main.tts}")
-                                        self.main.save_config(self.main.cache_path, self.main.model, self.main.tts,
-                                                              self.main.debug, self.main.launcher,
-                                                              self.main.enable_draw)
-                                    elif new_message == "/tts_status":
-                                        self.main.send_message(f"TTS:{self.main.tts}")
-                                        self.log(f"[DEBUG]TTS状态: {self.main.tts}")
-                                    elif new_message == "/debug":
-                                        self.main.debug = not self.main.debug
-                                        self.debug_var.set(self.main.debug)
-                                        if self.main.debug:
-                                            self.main.send_message(f"[DEBUG]debug:{self.main.tts}")
-                                            self.log(f"[DEBUG]调试模式开启")
-                                        self.main.save_config(self.main.cache_path, self.main.model, self.main.tts,
-                                                              self.main.debug, self.main.launcher,
-                                                              self.main.enable_draw)
-                                    elif new_message == "/shutdown":
-                                        self.main.send_message("哥哥你的电脑报废了...")
-                                        os.system("shutdown -s -t 0")
-                                    elif new_message.startswith("/file"):
-                                        try:
-                                            message_text = new_message.split(" ")[1]
-                                        except IndexError:
-                                            message_text = ""
-                                        if self.main.debug:
-                                            self.main.send_message("[DEBUG]正在发送文件...")
-                                            self.log(f"[DEBUG]发送文件: {message_text}")
-                                        self.main.send_file(message_text)
-                                    elif new_message.startswith("/dir"):
-                                        try:
-                                            message_text = new_message.split(" ")[1]
-                                        except IndexError:
-                                            message_text = ""
-                                        if self.main.debug:
-                                            self.main.send_message("[DEBUG]正在发送文件夹目录...")
-                                            self.log(f"[DEBUG]发送目录: {message_text}")
-                                        self.main.send_dir(message_text)
-                                    elif new_message == "/reset":
-                                        os.remove(f"memories\\{self.user}.txt")
-                                        if self.main.debug:
-                                            self.main.send_message("[DEBUG]记忆已重置")
-                                            self.log(f"[DEBUG]用户 {self.user} 的记忆已重置")
-                                    elif new_message.startswith("/model"):
-                                        if self.main.launcher == "ollama":
-                                            model_list = self.main.olML()
-                                        else:
-                                            model_list = self.main.fcML()
-                                        parts = new_message.split(" ")
-                                        if len(parts) < 2:
-                                            self.main.send_message("模型命令格式错误")
-                                            continue
-
-                                        if parts[1] == "list":
-                                            self.log(f"[DEBUG]模型列表: {model_list}")
-                                            self.main.send_message(str(model_list))
-                                        elif parts[1] == "set" and len(parts) >= 3:
-                                            new_model = parts[2]
-                                            if new_model in model_list:
-                                                self.main.model = new_model
-                                                self.main.send_message(f"已切换模型为{self.main.model}")
-                                                self.log(f"[DEBUG]模型已切换为: {self.main.model}")
-                                                self.main.save_config(self.main.cache_path, self.main.model,
-                                                                      self.main.tts,
-                                                                      self.main.debug, self.main.launcher,
-                                                                      self.main.enable_draw)
-                                                self.update_model_list()
-                                            else:
-                                                self.main.send_message(f"无名为{new_model}的模型")
-                                                self.log(f"[WARN]模型不存在: {new_model}")
-                                        else:
-                                            self.main.send_message(f"未知命令: {new_message}")
-                                            self.log(f"[WARN]未知命令: {new_message}")
-                                else:
-                                    self.main.send_message("少女思考中...")
-                                    # 创建一个事件用于控制AI思考过程是否被中断
-                                    interrupt_event = threading.Event()
-
-                                    # 使用线程来处理AI回复，这样可以在主线程中检查新消息
-                                    def get_ai_response(result_container):
-                                        try:
-                                            result_container['response'] = ai_agent.get_response(
-                                                (message_type, new_message))
-                                        except Exception as e:
-                                            result_container['response'] = "呜呜~思考过程中断了啦！"
-                                            self.log(f"[ERROR] AI response error: {e}")
-
-                                    result = {}
-                                    ai_thread = threading.Thread(target=get_ai_response, args=(result,))
-                                    ai_thread.start()
-
-                                    # 在AI思考过程中检查是否有新消息
-                                    while ai_thread.is_alive():
-                                        time.sleep(0.1)  # 短暂休眠以避免过度占用CPU
-                                        place = self.main.check_unread_message()
-                                        if place:
-                                            # 有新消息，中断当前思考
-                                            interrupt_event.set()
-                                            ai_thread.join(timeout=1)  # 等待线程结束，最多等待1秒
-
-                                            # 处理新消息
-                                            self.main.pag.click(x=place[0] + 30, y=place[1] + 20)
-                                            new_msg = self.main.get_new_message()
-                                            msg_type = new_msg[0]
-                                            if new_msg[0]:
-                                                if new_msg[0] == "text":
-                                                    msg_content = new_msg[1]
-                                                    # 将新消息加入AI的上下文
-                                                    if self.main.launcher == "fastchat":
-                                                        ai_agent.messages.append(
-                                                            {"role": "user", "content": msg_content})
-                                                    elif self.main.launcher == "ollama":
-                                                        ai_agent.message.append(
-                                                            {"role": "user", "content": msg_content})
-                                                        ai_agent.memory_manager.save_memory(f"[user] {msg_content}")
-
-                                                    if self.main.debug:
-                                                        self.log(f"[DEBUG] Interrupted by new message: {msg_content}")
-                                            # 重新开始检查消息循环
-                                            break
-
-                                    # 如果思考未被中断，则继续处理原消息的回复
-                                    if not interrupt_event.is_set():
-                                        ai_thread.join()  # 等待AI思考完成
-                                        reply = result.get('response', "呜呜~我没有想好要说什么...")
-
-                                        if self.main.debug:
-                                            self.log(f"[DEBUG]Ollama响应: {reply}")
-
-                                        if self.main.enable_draw:
-                                            if "你要看" in reply and "画" in reply:
-                                                try:
-                                                    sd_prompt = ai_agent.get_response(
-                                                        f"从{reply}中提取适用于SD的AI绘画提示词，英语，具体，500词以内。只有单词或短语",
-                                                        memory=False)
-                                                    self.main.send_message("正在绘画...")
-                                                    prompt = new_message.split(" ")[1]
-                                                    self.log(f"[DEBUG]绘画提示词: {prompt}")
-                                                    self.main.send_message("正在绘画...")
-                                                    self.main.send_file(self.main.sd_api(new_message.split(" ")[1]))
-                                                    if self.debug_var.get():
-                                                        self.log(f"[DEBUG]sd draw.prompt{new_message.split(' ')[1]}")
-                                                    time.sleep(0.2)
-                                                except Exception as e:
-                                                    self.main.send_message("绘画失败")
-                                                    self.log(f"[WARN]绘画错误: {e}")
-
-                                        if "//call video" in reply:
-                                            reply = reply.replace("//call video", "")
-                                            self.main.call_video()
-                                            if self.main.debug:
-                                                self.log(f"[DEBUG]调用视频")
-                                            time.sleep(0.2)
-
-                                        if "//touch_head" in reply:
-                                            self.main.head_shot()
-                                            if self.main.debug:
-                                                self.log(f"[DEBUG]触摸头部")
-                                            reply = reply.replace("//touch_head", "")
-                                            time.sleep(0.2)
-
-                                        if self.main.tts:
-                                            try:
-                                                if self.debug_var.get():
-                                                    self.log(f"[DEBUG]tts start.")
-                                                self.main.send_message("TTS...")
-                                                res = requests.post(self.main.tts_path, data={
-                                                    "text": reply,
-                                                    "prompt": "",
-                                                    "voice": "3333",
-                                                    "temperature": 0.3,
-                                                    "top_p": 0.7,
-                                                    "top_k": 20,
-                                                    "skip_refine": 0,
-                                                    "custom_voice": 0
-                                                })
-                                                if self.debug_var.get():
-                                                    self.log(f"[DEBUG]TTS file path:{res.json()['filename']}")
-                                                try:
-                                                    self.main.send_file(res.json()["filename"])
-                                                except requests.exceptions.JSONDecodeError as e:
-                                                    self.log(f"Failed to decode JSON response from TTS service: {e}")
-                                            except Exception as e:
-                                                if self.debug_var.get():
-                                                    self.log(f"[DEBUG]Error occurred while sending TTS request: {e}")
-                                                self.main.send_message("哥哥！是不是你把我的声带偷了！！！：" + str(e))
-
-                                        self.main.send_message(reply)
-                                        self.main.call_times -= 0.1
-
-                                self.main.click_user_next()
-                        else:
-                            self.main.click_user_next()
-                    time.sleep(1)  # 模拟检查间隔
+            self.core.tts_set()
+            self.log_message(f"TTS: {'enabled' if self.core.tts else 'disabled'}")
         except Exception as e:
-            self.log(f"运行错误: {e}")
-        finally:
-            self.is_running = False
-            self.start_button.config(text="开始")
-            self.log("运行结束")
+            self.log_message(f"Error toggling TTS: {e}")
+
+    def toggle_draw(self):
+        try:
+            # 注意：core.py中没有直接的set_draw方法，我们需要通过配置管理来实现
+            self.core.enable_draw = self.draw.get()
+            from config_manager import save_config
+            save_config("draw", self.core.enable_draw)
+            self.log_message(f"Draw feature: {'enabled' if self.core.enable_draw else 'disabled'}")
+        except Exception as e:
+            self.log_message(f"Error toggling draw: {e}")
+
+    def start_core(self):
+        try:
+            self.logger.info("Starting core...")
+            self.log_message("Starting core...")
+            # 在新线程中运行core，避免阻塞GUI
+            import threading
+            thread = threading.Thread(target=self._run_core)
+            thread.daemon = True
+            thread.start()
+        except Exception as e:
+            self.logger.error(f"Failed to start core: {e}")
+            self.log_message(f"Error: {e}")
+
+    def _run_core(self):
+        try:
+            self.core.core_run()
+        except Exception as e:
+            self.log_message(f"Core error: {e}")
+
+    def open_settings(self):
+        settings_window = tk.Toplevel(self.win)
+        settings_window.title("Settings")
+        settings_window.geometry("500x400")
+
+        # 创建notebook用于分页
+        notebook = ttk.Notebook(settings_window)
+        notebook.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # 路径设置标签页
+        path_frame = ttk.Frame(notebook)
+        notebook.add(path_frame, text="Paths")
+
+        # LLM路径
+        tk.Label(path_frame, text="LLM Path:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        llm_path_entry = tk.Entry(path_frame, textvariable=tk.StringVar(value=self.core.llm_path), width=40)
+        llm_path_entry.grid(row=0, column=1, padx=5, pady=5)
+        tk.Button(path_frame, text="Browse", command=lambda: self.browse_path(llm_path_entry, "llm")).grid(row=0,
+                                                                                                           column=2,
+                                                                                                           padx=5,
+                                                                                                           pady=5)
+
+        # SD路径
+        tk.Label(path_frame, text="SD Path:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
+        sd_path_entry = tk.Entry(path_frame, textvariable=tk.StringVar(value=self.core.sd_path), width=40)
+        sd_path_entry.grid(row=1, column=1, padx=5, pady=5)
+        tk.Button(path_frame, text="Browse", command=lambda: self.browse_path(sd_path_entry, "sd")).grid(row=1,
+                                                                                                         column=2,
+                                                                                                         padx=5, pady=5)
+
+        # TTS路径
+        tk.Label(path_frame, text="TTS Path:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
+        tts_path_entry = tk.Entry(path_frame, textvariable=tk.StringVar(value=self.core.tts_path), width=40)
+        tts_path_entry.grid(row=2, column=1, padx=5, pady=5)
+        tk.Button(path_frame, text="Browse", command=lambda: self.browse_path(tts_path_entry, "tts")).grid(row=2,
+                                                                                                           column=2,
+                                                                                                           padx=5,
+                                                                                                           pady=5)
+
+        # 缓存路径
+        tk.Label(path_frame, text="Cache Path:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
+        cache_path_entry = tk.Entry(path_frame, textvariable=tk.StringVar(value=self.core.cache_path), width=40)
+        cache_path_entry.grid(row=3, column=1, padx=5, pady=5)
+        tk.Button(path_frame, text="Browse", command=lambda: self.browse_path(cache_path_entry, "cache")).grid(row=3,
+                                                                                                               column=2,
+                                                                                                               padx=5,
+                                                                                                               pady=5)
+
+        # 模型设置标签页
+        model_frame = ttk.Frame(notebook)
+        notebook.add(model_frame, text="Models")
+
+        # 当前模型
+        tk.Label(model_frame, text="Current Model:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        model_entry = tk.Entry(model_frame, textvariable=tk.StringVar(value=self.core.model), width=40)
+        model_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        # Live2D模型
+        tk.Label(model_frame, text="Live2D Model:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
+        l2d_model_entry = tk.Entry(model_frame, textvariable=tk.StringVar(value=self.core.l2d_model), width=40)
+        l2d_model_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        # API密钥标签页
+        api_frame = ttk.Frame(notebook)
+        notebook.add(api_frame, text="API Keys")
+
+        # API密钥（如果需要）
+        tk.Label(api_frame, text="API Key:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        api_key_entry = tk.Entry(api_frame, width=40, show="*")
+        api_key_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        # 按钮框架
+        button_frame = tk.Frame(settings_window)
+        button_frame.pack(pady=10)
+
+        # 保存按钮
+        tk.Button(button_frame, text="Save", command=lambda: self.save_settings(
+            llm_path_entry.get(), sd_path_entry.get(), tts_path_entry.get(),
+            cache_path_entry.get(), model_entry.get(), l2d_model_entry.get()
+        )).pack(side="left", padx=5)
+
+        # 取消按钮
+        tk.Button(button_frame, text="Cancel", command=settings_window.destroy).pack(side="left", padx=5)
+
+        # 重置按钮
+        tk.Button(button_frame, text="Reset", command=lambda: self.reset_settings(
+            llm_path_entry, sd_path_entry, tts_path_entry, cache_path_entry,
+            model_entry, l2d_model_entry
+        )).pack(side="left", padx=5)
+
+    def open_user_management(self):
+        user_window = tk.Toplevel(self.win)
+        user_window.title("用户管理")
+        user_window.geometry("400x300")
+
+        # 用户列表
+        tk.Label(user_window, text="用户列表:").pack(pady=5)
+
+        # 创建列表框和滚动条
+        list_frame = tk.Frame(user_window)
+        list_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        user_listbox = tk.Listbox(list_frame)
+        scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=user_listbox.yview)
+        user_listbox.config(yscrollcommand=scrollbar.set)
+
+        # 填充用户列表
+        users = self.core.user_list()
+        for user in users:
+            user_listbox.insert(tk.END, os.path.splitext(user)[0])
+
+        user_listbox.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # 按钮框架
+        button_frame = tk.Frame(user_window)
+        button_frame.pack(pady=10)
+
+        # 添加用户按钮
+        tk.Button(button_frame, text="添加用户", command=self.add_user).pack(side="left", padx=5)
+
+        # 删除用户按钮
+        tk.Button(button_frame, text="删除用户", command=lambda: self.delete_user(user_listbox)).pack(side="left",
+                                                                                                      padx=5)
+
+        # 设置当前用户按钮
+        tk.Button(button_frame, text="设为当前用户", command=lambda: self.set_current_user(user_listbox)).pack(
+            side="left", padx=5)
+
+    def add_user(self):
+        # 打开添加用户对话框
+        dialog = AddUserDialog(self.win, self.core)
+        self.win.wait_window(dialog)
+        # 更新用户列表
+        self.update_tk()
+
+    def delete_user(self, listbox):
+        selection = listbox.curselection()
+        if not selection:
+            messagebox.showwarning("警告", "请先选择一个用户")
+            return
+
+        user_name = listbox.get(selection[0])
+        if messagebox.askyesno("确认", f"确定要删除用户 {user_name} 吗？"):
+            try:
+                # 调用core中的用户删除方法
+                self.core.user_delete()
+                # 删除用户相关文件
+                self.remove_user_files(user_name)
+                # 更新用户列表
+                self.update_tk()
+                # 从列表框中移除
+                listbox.delete(selection[0])
+                messagebox.showinfo("成功", f"用户 {user_name} 已删除")
+            except Exception as e:
+                messagebox.showerror("错误", f"删除用户失败: {str(e)}")
+
+    def remove_user_files(self, user_name):
+        try:
+            # 删除用户设置文件
+            set_file = os.path.join("set", f"{user_name}.txt")
+            if os.path.exists(set_file):
+                os.remove(set_file)
+
+            # 删除用户记忆文件
+            memory_file = os.path.join("memories", f"{user_name}.txt")
+            if os.path.exists(memory_file):
+                os.remove(memory_file)
+
+            # 删除用户资源目录
+            user_resource_dir = os.path.join("resources", "images", user_name)
+            if os.path.exists(user_resource_dir):
+                shutil.rmtree(user_resource_dir)
+        except Exception as e:
+            print(f"删除用户文件时出错: {e}")
+
+    def set_current_user(self, listbox):
+        selection = listbox.curselection()
+        if not selection:
+            messagebox.showwarning("警告", "请先选择一个用户")
+            return
+
+        user_name = listbox.get(selection[0])
+        self.user.set(user_name)
+        self.core.user_set(user_name)
+        messagebox.showinfo("成功", f"当前用户已设置为 {user_name}")
+
+    def browse_path(self, entry_widget, path_type):
+        path = filedialog.askdirectory() if path_type != "file" else filedialog.askopenfilename()
+        if path:
+            entry_widget.delete(0, tk.END)
+            entry_widget.insert(0, path)
+
+    def save_settings(self, llm_path, sd_path, tts_path, cache_path, model, l2d_model):
+        try:
+            # 保存路径设置
+            if llm_path and llm_path != self.core.llm_path:
+                self.core.set_llm_path(llm_path)
+
+            if sd_path and sd_path != self.core.sd_path:
+                self.core.set_sd_path(sd_path)
+
+            if tts_path and tts_path != self.core.tts_path:
+                self.core.set_tts_path(tts_path)
+
+            if cache_path and cache_path != self.core.cache_path:
+                self.core.set_cache_set(cache_path)
+
+            # 保存模型设置
+            if model and model != self.core.model:
+                self.core.llm_model_set(model)
+
+            # 保存Live2D模型设置
+            if l2d_model and l2d_model != self.core.l2d_model:
+                # 注意：core.py中没有直接设置l2d_model的方法，需要通过配置管理
+                from config_manager import save_config
+                save_config("l2d_model", l2d_model)
+                self.core.l2d_model = l2d_model
+
+            self.log_message("Settings saved successfully")
+            self.update_labels()
+            self.update_tk()
+        except Exception as e:
+            self.log_message(f"Error saving settings: {e}")
+
+    def reset_settings(self, llm_entry, sd_entry, tts_entry, cache_entry, model_entry, l2d_entry):
+        llm_entry.delete(0, tk.END)
+        llm_entry.insert(0, self.core.llm_path)
+        sd_entry.delete(0, tk.END)
+        sd_entry.insert(0, self.core.sd_path)
+        tts_entry.delete(0, tk.END)
+        tts_entry.insert(0, self.core.tts_path)
+        cache_entry.delete(0, tk.END)
+        cache_entry.insert(0, self.core.cache_path)
+        model_entry.delete(0, tk.END)
+        model_entry.insert(0, self.core.model)
+        l2d_entry.delete(0, tk.END)
+        l2d_entry.insert(0, self.core.l2d_model)
+
+    def log_message(self, message):
+        self.output_text.insert(tk.END, message + "\n")
+        self.output_text.see(tk.END)
+        self.output_text.update()
+
+    def mainloop(self):
+        self.win.mainloop()
+
+    def update_title(self):
+        running_status = "Running" if self.core.get_info().get('running') else "Stopped"
+        self.win.title(f"WeChatBotGUI - {running_status}")
+        self.win.update()
 
 
-if __name__ == "__main__":
-    import main as main_module
-
-    app = WeChatBotGUI(main_module)
-    app.mainloop()
+app = App()
+app.mainloop()
