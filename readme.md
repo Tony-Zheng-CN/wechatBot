@@ -1,7 +1,6 @@
-# WeChatBot ®C English Readme
+# WeChatBot ÊØè English Readme
 
 A WeChat bot project that integrates an AI assistant, text-to-speech, image generation, and more.  
-<small><small><small><small><small>~~Although I treat her as my little sister :)~~</small></small></small></small></small>
 
 ## Project Overview
 
@@ -51,31 +50,31 @@ Its goal is to provide an intelligent WeChat bot capable of natural conversation
 ## Directory Layout
 
 ```
-©¿©§©§ ai_agent/            # AI-related modules  
-©¶   ©¿©§©§ bing_crawler.py  # Bing search crawler  
-©¶   ©¿©§©§ fastchat_ver.py  # FastChat AI agent (deprecated)  
-©¶   ©¿©§©§ memory_manger.py # Memory manager  
-©¶   ©¿©§©§ ollama_ver.py    # Ollama AI agent  
-©¶   ©¿©§©§ api_ver.py       # API-style AI agent  
-©¶   ©¿©§©§ sd_api.py        # Stable Diffusion API interface  
-©¶   ©¿©§©§ tts.py           # Text-to-speech interface  
-©¶   ©∏©§©§ system_format.txt# Default configuration  
-©¿©§©§ resources/           # Static assets  
-©¶   ©¿©§©§ icon.txt         # App icon (customizable)  
-©¶   ©¿©§©§ command_help_wechat.txt # In-chat help  
-©¶   ©∏©§©§ help.txt         # CLI help  
-©¿©§©§ l2d_agent/           # Live2D module  
-©¶   ©∏©§©§ l2d_control.py   # Live2D avatar control  
-©¿©§©§ set/                 # User settings  
-©¿©§©§ cache/               # Temporary files  
-©¿©§©§ memories/            # Persistent memory  
-©¿©§©§ add_user.py          # Add-user utility  
-©¿©§©§ config.json          # Main configuration  
-©¿©§©§ config_manager.py    # Config loader/saver  
-©¿©§©§ gui.py               # GUI entry point  
-©¿©§©§ gui_control.py       # GUI-to-WeChat bridge  
-©¿©§©§ core.py              # Core engine  
-©∏©§©§ main.py              # CLI entry point
+ÂøµÂ≤∏Â≤∏ ai_agent/            # AI-related modules  
+Â≤´   ÂøµÂ≤∏Â≤∏ bing_crawler.py  # Bing search crawler  
+Â≤´   ÂøµÂ≤∏Â≤∏ fastchat_ver.py  # FastChat AI agent (deprecated)  
+Â≤´   ÂøµÂ≤∏Â≤∏ memory_manger.py # Memory manager  
+Â≤´   ÂøµÂ≤∏Â≤∏ ollama_ver.py    # Ollama AI agent  
+Â≤´   ÂøµÂ≤∏Â≤∏ api_ver.py       # API-style AI agent  
+Â≤´   ÂøµÂ≤∏Â≤∏ sd_api.py        # Stable Diffusion API interface  
+Â≤´   ÂøµÂ≤∏Â≤∏ tts.py           # Text-to-speech interface  
+Â≤´   Âº©Â≤∏Â≤∏ system_format.txt# Default configuration  
+ÂøµÂ≤∏Â≤∏ resources/           # Static assets  
+Â≤´   ÂøµÂ≤∏Â≤∏ icon.txt         # App icon (customizable)  
+Â≤´   ÂøµÂ≤∏Â≤∏ command_help_wechat.txt # In-chat help  
+Â≤´   Âº©Â≤∏Â≤∏ help.txt         # CLI help  
+ÂøµÂ≤∏Â≤∏ l2d_agent/           # Live2D module  
+Â≤´   Âº©Â≤∏Â≤∏ l2d_control.py   # Live2D avatar control  
+ÂøµÂ≤∏Â≤∏ set/                 # User settings  
+ÂøµÂ≤∏Â≤∏ cache/               # Temporary files  
+ÂøµÂ≤∏Â≤∏ memories/            # Persistent memory  
+ÂøµÂ≤∏Â≤∏ add_user.py          # Add-user utility  
+ÂøµÂ≤∏Â≤∏ config.json          # Main configuration  
+ÂøµÂ≤∏Â≤∏ config_manager.py    # Config loader/saver  
+ÂøµÂ≤∏Â≤∏ gui.py               # GUI entry point  
+ÂøµÂ≤∏Â≤∏ gui_control.py       # GUI-to-WeChat bridge  
+ÂøµÂ≤∏Â≤∏ core.py              # Core engine  
+Âº©Â≤∏Â≤∏ main.py              # CLI entry point
 ```
 
 ## Installation & Setup
@@ -95,9 +94,9 @@ Its goal is to provide an intelligent WeChat bot capable of natural conversation
 4. Launch: `python main.py` (TUI) or `python gui.py` (GUI)
 
 ### Configuration
-- `config.json` ®C main settings (cache paths, model choices°≠)  
-- `set/` ®C per-user overrides  
-- `tts_config.json` ®C TTS settings
+- `config.json` ÊØè main settings (cache paths, model choicesÔºÉ)  
+- `set/` ÊØè per-user overrides  
+- `tts_config.json` ÊØè TTS settings
 
 ## Usage
 
@@ -106,7 +105,7 @@ Its goal is to provide an intelligent WeChat bot capable of natural conversation
 - GUI: `python gui.py` or type `gui` in TUI
 
 ### Hotkey
-- `Ctrl+Shift+Alt+Esc` ®C force shutdown
+- `Ctrl+Shift+Alt+Esc` ÊØè force shutdown
 
 ### GUI
 A full GUI is provided for user management and configuration tweaks.
@@ -116,12 +115,12 @@ A full GUI is provided for user management and configuration tweaks.
 ### AI Agent (`ai_agent/`)
 Handles all AI interactions:
 
-- `ollama_ver.py` ®C Ollama backend  
-- `fastchat_ver.py` ®C FastChat backend (deprecated)  
-- `api_ver.py` ®C Generic API backend  
-- `sd_api.py` ®C Stable Diffusion wrapper  
-- `memory_manger.py` ®C Conversation memory  
-- `bing_crawler.py` ®C Web search
+- `ollama_ver.py` ÊØè Ollama backend  
+- `fastchat_ver.py` ÊØè FastChat backend (deprecated)  
+- `api_ver.py` ÊØè Generic API backend  
+- `sd_api.py` ÊØè Stable Diffusion wrapper  
+- `memory_manger.py` ÊØè Conversation memory  
+- `bing_crawler.py` ÊØè Web search
 
 ### GUI (`gui.py`, `gui_control.py`)
 Tkinter/ttkbootstrap-based interface with live WeChat control.
@@ -149,5 +148,4 @@ MIT
 ## Contact
 
 zhengyifantony@outlook.com  
-[“ª÷ª–≈œ¢øŒ¥˙±Ì @ Bilibili](https://space.bilibili.com/1969540992)  
 <small><small><small><small><small><small><small><small><small><small><small><small><small><small><small><small><small><small><small>[Something Interesting](resources/game/game.py)</small></small></small></small></small></small></small></small></small></small></small></small></small></small></small></small></small></small></small>
